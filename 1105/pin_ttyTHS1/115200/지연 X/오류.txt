@@ -1,0 +1,5 @@
+Data saved to /home/jetpack/Desktop/admp_adc/save_log/2024-11-04-12-59-26-admp-log.txt
+Traceback (most recent call last):
+  File "serial_monitor.py", line 15, in <module>
+    line = ser.readline().decode('utf-8').strip()
+UnicodeDecodeError: 'utf-8' codec can't decode byte 0xdd in position 1021: invalid continuation byte

@@ -1,0 +1,89 @@
+보드레이트 912600
+지연 100마이크로초
+
+0.1초당 받는 샘플 개수 평균 200 = 1초당 2000개
+0.1초당 받는 샘플 개수 평균 330개 = 1초당 3300개
+
+보드레이트 1000000
+
+10000 마이크로초 = 20
+1000 마이크로초 = 2
+100 마이크로초 = 0.2
+10 마이크로초 = 0.02
+
+시도 해 볼만한 방법
+ser = serial.Serial('/dev/ttyTHS1', 912600, timeout=0.01)
+timeout=0.01 -> 10밀리초 동안 시리얼 데이터 수신을 기다림
+
+sleep_us(10);
+지연 마이크로초가 현재 100 마이크로초로 설정 되어 있는데 이를 1 마이크로초 또는 지연 X
+float type을 double, long double
+송신 버퍼 크기 늘리기, 송신 할 때 뒷자리를 제거해서 .2f로 송신하기
+
+
+보드레이드 1000000 timeout=0.001 지연 100마이크로초 => 200개
+보드레이드 1000000 timeout=0.001 디코딩 제거 지연 10마이크로초 => 215개
+보드레이드 1000000 timeout=0.001 디코딩 제거 지연 1마이크로초 => 215~220 + 데이터 전송 오류
+보드레이드 1000000 timeout=0.001 디코딩 제거 지연 제거 => 값 X
+보드레이드 1000000 timeout=0.001 디코딩 제거 지연 10마이크로초 FIFO를 활성화 하드웨어 플로우 제어 비활성화 ==> 330개 문제는 될때 있고 안될 때 있음
+보드레이드 1000000 timeout=0.001 디코딩 제거 지연 100마이크로초 FIFO를 활성화 하드웨어 플로우 제어 비활성화 ==> 200개
+
+10만 ~ 20만
+
+- Pico 부팅 이후 경과 시간 기준으로 타임스탬프 생성
+- 샘플링 주파수
+- 128000 = 128kHz
+- 100000 = 100kHz
+- 72000 = 72kHz
+- 44000 = 44kHz
+
+
+gst-launch-1.0 nvarguscamerasrc ! 'video/x-raw(memory:NVMM), width=1280, height=720, format=NV12, framerate=30/1' ! nvvidconv ! nvegltransform ! nveglglessink -e
+
+
+import cv2
+
+class XtgtNx:
+    def __init__(self):
+        self.cap = self.create_camera()
+
+    def create_camera(self):
+        gstreamer_pipeline = (
+            "nvarguscamerasrc ! "
+            "video/x-raw(memory:NVMM), width=640, height=480, format=NV12, framerate=30/1 ! "
+            "nvvidconv flip-method=0 ! "
+            "video/x-raw, width=640, height=480, format=BGRx ! "
+            "videoconvert ! "
+            "video/x-raw, format=BGR ! appsink"
+        )
+        cap = cv2.VideoCapture(gstreamer_pipeline, cv2.CAP_GSTREAMER)
+        if not cap.isOpened():
+            raise RuntimeError("Fail open cam")
+        return cap
+
+    def cam_processing(self, image):
+        # 이 부분에서 이미지를 처리하고 결과를 보여줄 수 있습니다.
+        cv2.imshow("Camera Feed", image)
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('q'):
+            return False  # 'q'를 누르면 종료
+        return True
+
+    def main(self):
+        while True:
+            ret, frame = self.cap.read()
+            if not ret:
+                print("Failed to grab frame")
+                break
+            
+            if not self.cam_processing(frame):
+                break  # 'q' 키 입력 시 루프 탈출
+
+        self.cap.release()
+        cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    xtgt_nx = XtgtNx()
+    xtgt_nx.main()
+
+

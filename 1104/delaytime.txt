@@ -1,0 +1,28 @@
+"""Timestamp 및 송수신 시간 추가"""
+import serial
+import time
+
+ser = serial.Serial('/dev/ttyACM0', 115200, timeout=1)
+
+try:
+    while True:
+        if ser.in_waiting > 0:
+            start_time = time.time()  
+            
+            line = ser.readline().decode('utf-8').strip()
+            voltage = float(line)
+            timestamp = time.strftime("[%Y-%m-%d %H:%M:%S]", time.localtime())  # 수신 타임스탬프 기록
+            
+            elapsed_time = (time.time() - start_time) * 1000  # 송수신에 걸린 시간 계산 ms 단위 변환
+            
+            print(f"{timestamp} ADC: {voltage:.4f} | Trans time: {elapsed_time:.2f} ms")
+
+except KeyboardInterrupt:
+    print("exit.")
+finally:
+    ser.close()
+
+
+elapsed_time = (time.time() - start_time) * 1000  # 송수신에 걸린 시간 계산 ms 단위 변환
+-> 평균 0.50ms(밀리초)
+-> 이보다 더 빠르게 수신 받는 시간을 짧게 해줘야 함 마이크로 단위급?
